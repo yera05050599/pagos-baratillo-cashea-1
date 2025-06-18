@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Venta y Pagos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-section input[type="text"],
+        .form-section input[type="tel"],
+        .form-section input[type="number"],
+        .form-section input[type="date"],
+        .form-section textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-section button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .form-section button:hover {
+            background-color: #0056b3;
+        }
+        .product-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .product-item input {
+            flex: 1;
+        }
+        .product-item button {
+            width: auto;
+            padding: 8px 12px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 0; /* Override default button margin */
+        }
+        .product-item button:hover {
+            background-color: #c82333;
+        }
+        .summary-section {
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 30px;
+        }
+        .summary-item {
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px dotted #eee;
+        }
+        .summary-item strong {
+            color: #0056b3;
+        }
+        .payment-schedule {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .payment-schedule h3 {
+            text-align: center;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        .payment-schedule div {
+            margin-bottom: 8px;
+        }
+        .error-message {
+            color: red;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Registro de Venta y Plan de Pagos</h1>
+
+        <div class="form-section">
+            <h2>Datos del Cliente y Factura</h2>
+            <label for="clienteNombre">Nombre del Cliente:</label>
+            <input type="text" id="clienteNombre" placeholder="Ej: Juan Pérez" required>
+
+            <label for="clienteID">Número de Identificación:</label>
+            <input type="text" id="clienteID" placeholder="Ej: V-12345678" required>
+
+            <label for="clienteTelefono">Número de Teléfono:</label>
+            <input type="tel" id="clienteTelefono" placeholder="Ej: 0412-1234567" required>
+
+            <label for="clienteDireccion">Dirección de Habitación:</label>
+            <textarea id="clienteDireccion" rows="3" placeholder="Ej: Calle Principal, Casa #10, Urb. Centro, Ciudad, Estado" required></textarea>
+
+            <label for="numeroFactura">Número de Factura:</label>
+            <input type="text" id="numeroFactura" placeholder="Ej: F-2025-001" required>
+
+            <h2>Productos Adquiridos</h2>
+            <div id="productosContainer">
+                <div class="product-item">
+                    <input type="text" class="productoNombre" placeholder="Nombre del Producto" required>
+                    <input type="number" class="productoMonto" placeholder="Monto Unitario" min="0.01" step="0.01" required>
+                    <button type="button" onclick="removeProduct(this)">Eliminar</button>
+                </div>
+            </div>
+            <button type="button" onclick="addProduct()">Agregar Otro Producto</button>
+
+            <button type="button" onclick="calcularPagos()">Generar Plan de Pagos</button>
+        </div>
+
+        <div class="summary-section" id="summarySection" style="display:none;">
+            <h2>Resumen de la Venta</h2>
+            <div class="summary-item"><strong>Cliente:</strong> <span id="summaryClienteNombre"></span></div>
+            <div class="summary-item"><strong>ID:</strong> <span id="summaryClienteID"></span></div>
+            <div class="summary-item"><strong>Teléfono:</strong> <span id="summaryClienteTelefono"></span></div>
+            <div class="summary-item"><strong>Dirección:</strong> <span id="summaryClienteDireccion"></span></div>
+            <div class="summary-item"><strong>Nº Factura:</strong> <span id="summaryNumeroFactura"></span></div>
+            <div class="summary-item"><strong>Productos:</strong>
+                <ul id="summaryProductosList"></ul>
+            </div>
+            <div class="summary-item"><strong>Monto Total de Productos:</strong> <span id="summaryMontoTotal"></span></div>
+            <div class="summary-item"><strong>Inicial (30%):</strong> <span id="summaryInicial"></span></div>
+
+            <div class="payment-schedule">
+                <h3>Plan de Pagos</h3>
+                <div id="paymentScheduleDates"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let productCounter = 1;
+
+        function addProduct() {
+            const container = document.getElementById('productosContainer');
+            const newProductDiv = document.createElement('div');
+            newProductDiv.classList.add('product-item');
+            newProductDiv.innerHTML = `
+                <input type="text" class="productoNombre" placeholder="Nombre del Producto" required>
+                <input type="number" class="productoMonto" placeholder="Monto Unitario" min="0.01" step="0.01" required>
+                <button type="button" onclick="removeProduct(this)">Eliminar</button>
+            `;
+            container.appendChild(newProductDiv);
+        }
+
+        function removeProduct(button) {
+            button.parentNode.remove();
+        }
+
+        function calcularPagos() {
+            // Recopilar datos del cliente y factura
+            const clienteNombre = document.getElementById('clienteNombre').value;
+            const clienteID = document.getElementById('clienteID').value;
+            const clienteTelefono = document.getElementById('clienteTelefono').value;
+            const clienteDireccion = document.getElementById('clienteDireccion').value;
+            const numeroFactura = document.getElementById('numeroFactura').value;
+
+            if (!clienteNombre || !clienteID || !clienteTelefono || !clienteDireccion || !numeroFactura) {
+                alert("Por favor, rellene todos los campos del cliente y factura.");
+                return;
+            }
+
+            // Recopilar productos y calcular monto total
+            let montoTotalProductos = 0;
+            const productos = [];
+            const productoNombres = document.querySelectorAll('.productoNombre');
+            const productoMontos = document.querySelectorAll('.productoMonto');
+
+            if (productoNombres.length === 0) {
+                alert("Debe agregar al menos un producto.");
+                return;
+            }
+
+            for (let i = 0; i < productoNombres.length; i++) {
+                const nombre = productoNombres[i].value;
+                const monto = parseFloat(productoMontos[i].value);
+
+                if (!nombre || isNaN(monto) || monto <= 0) {
+                    alert("Por favor, asegúrese de que todos los productos tienen nombre y un monto válido.");
+                    return;
+                }
+                productos.push({ nombre: nombre, monto: monto });
+                montoTotalProductos += monto;
+            }
+
+            // Cálculos
+            const inicialPorcentaje = 0.30; // 30%
+            const inicialMonto = montoTotalProductos * inicialPorcentaje;
+            const montoRestante = montoTotalProductos - inicialMonto;
+            const numeroCuotas = 3;
+            const montoPorCuota = montoRestante / numeroCuotas;
+
+            // Fechas de pago
+            const hoy = new Date();
+            const primerPagoFecha = new Date(hoy); // Asumimos que el primer pago es hoy o la fecha de generación
+            const segundoPagoFecha = new Date(primerPagoFecha);
+            segundoPagoFecha.setDate(primerPagoFecha.getDate() + 15);
+            const tercerPagoFecha = new Date(segundoPagoFecha);
+            tercerPagoFecha.setDate(segundoPagoFecha.getDate() + 15);
+
+            // Actualizar la sección de resumen
+            document.getElementById('summaryClienteNombre').textContent = clienteNombre;
+            document.getElementById('summaryClienteID').textContent = clienteID;
+            document.getElementById('summaryClienteTelefono').textContent = clienteTelefono;
+            document.getElementById('summaryClienteDireccion').textContent = clienteDireccion;
+            document.getElementById('summaryNumeroFactura').textContent = numeroFactura;
+
+            const summaryProductosList = document.getElementById('summaryProductosList');
+            summaryProductosList.innerHTML = ''; // Limpiar lista anterior
+            productos.forEach(producto => {
+                const li = document.createElement('li');
+                li.textContent = `${producto.nombre}: $${producto.monto.toFixed(2)}`;
+                summaryProductosList.appendChild(li);
+            });
+
+            document.getElementById('summaryMontoTotal').textContent = `$${montoTotalProductos.toFixed(2)}`;
+            document.getElementById('summaryInicial').textContent = `$${inicialMonto.toFixed(2)}`;
+
+            const paymentScheduleDatesDiv = document.getElementById('paymentScheduleDates');
+            paymentScheduleDatesDiv.innerHTML = `
+                <div><strong>Inicial (30%):</strong> $${inicialMonto.toFixed(2)}</div>
+                <div><strong>Monto Restante:</strong> $${montoRestante.toFixed(2)}</div>
+                <div><strong>Monto por Cuota:</strong> $${montoPorCuota.toFixed(2)}</div>
+                <br>
+                <div><strong>1ra Cuota:</strong> $${montoPorCuota.toFixed(2)} (Fecha sugerida: ${primerPagoFecha.toLocaleDateString('es-ES')})</div>
+                <div><strong>2da Cuota:</strong> $${montoPorCuota.toFixed(2)} (Fecha sugerida: ${segundoPagoFecha.toLocaleDateString('es-ES')})</div>
+                <div><strong>3ra Cuota:</strong> $${montoPorCuota.toFixed(2)} (Fecha sugerida: ${tercerPagoFecha.toLocaleDateString('es-ES')})</div>
+            `;
+
+            // Mostrar la sección de resumen
+            document.getElementById('summarySection').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
